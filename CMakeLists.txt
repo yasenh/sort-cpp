@@ -17,7 +17,7 @@ else ()
     message(FATAL_ERROR "Could not locate OpenCV")
 endif()
 
-set(SOURCE_FILES main.cpp)
+set(SOURCE_FILES main.cpp kalman_filter.cpp tracker.cpp tracker.h)
 add_executable(${CMAKE_PROJECT_NAME} ${SOURCE_FILES})
 
 target_link_libraries (
