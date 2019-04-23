@@ -34,16 +34,44 @@ void ProcessLabel(std::ifstream& label_file,
     bbox.push_back(bbox_per_frame);
 }
 
-void CalculateIou() {
 
+float CalculateIou(const cv::Rect& det, Tracker& trk) {
+    auto state = trk.GetState();
+
+    //convert_x_to_bbox
+    // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
+    auto width = std::sqrt(state[2] * state[3]);
+    auto height = state[2] / width;
+    auto tl_x = static_cast<int>(state[0] - width / 2);
+    auto tl_y = static_cast<int>(state[1] - height / 2);
+    auto br_x = static_cast<int>(state[0] + width / 2);
+    auto br_y = static_cast<int>(state[1] + height / 2);
+
+    auto xx1 = std::max(det.tl().x, tl_x);
+    auto yy1 = std::max(det.tl().y, tl_y);
+    auto xx2 = std::min(det.br().x, br_x);
+    auto yy2 = std::min(det.br().y, br_y);
+    auto w = std::max(0, xx2 - xx1);
+    auto h = std::max(0, yy2 - yy1);
+    auto intersection_area = w * h;
+    float det_area = det.area();
+    float trk_area = (br_x - tl_x) * (br_y - tl_y);
+    float union_area = det_area + trk_area - intersection_area;
+    auto iou = intersection_area / union_area;
+    return iou;
 }
 
 
 void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
-        const std::map<unsigned int, Tracker>& tracks, float threshold = 0.3) {
+        std::map<unsigned int, Tracker>& tracks,
+        std::map<unsigned int, cv::Rect>& matched,
+        std::vector<cv::Rect>& unmatched_det,
+        float threshold = 0.3) {
 
     if (tracks.empty()) {
-        // return np.empty((0,2),dtype=int), np.arange(len(detections)), np.empty((0,5),dtype=int)
+        for (const auto& det : detection) {
+            unmatched_det.push_back(det);
+        }
         return;
     }
 
@@ -52,10 +80,18 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
     iou_matrix.resize(detection.size(), std::vector<float>(tracks.size()));
 
     for (size_t i = 0; i < detection.size(); i++) {
-        for (size_t j = 0; j < tracks.size(); j++) {
-            iou_matrix[i,j] = ;
+        size_t j = 0;
+        for (auto& trk : tracks) {
+            iou_matrix[i][j] = CalculateIou(detection[i], trk.second);
+            j++;
         }
     }
+
+    // TODO: association ID and the figure out unmatched
+    for (const auto& det : detection) {
+        unmatched_det.push_back(det);
+    }
+
 }
 
 
@@ -80,6 +116,7 @@ int main() {
     cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE); // Create a window for display.
 
     unsigned int current_frame_index = 0;
+    unsigned int current_ID = 0;
     // Hash-map between ID and corresponding tracker
     std::map<unsigned int, Tracker> tracks;
 
@@ -106,11 +143,21 @@ int main() {
         }
 
         // matched, unmatched_dets, unmatched_trks
-        AssociateDetectionsToTrackers(bbox[current_frame_index], tracks);
+
+        std::map<unsigned int, cv::Rect> matched;
+        std::vector<cv::Rect> unmatched_det;
+
+        AssociateDetectionsToTrackers(bbox[current_frame_index], tracks, matched, unmatched_det);
 
         /*** Update tracks with associated bbox ***/
         for (auto& track : tracks) {
             //track.second.Update();
+        }
+
+        for (auto& det : unmatched_det) {
+            Tracker tracker;
+            tracker.Init(det);
+            tracks[current_ID++] = tracker;
         }
 
         // Show our image inside it

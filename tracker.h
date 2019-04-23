@@ -9,9 +9,12 @@
 class Tracker {
 public:
     explicit Tracker(unsigned int max_age = 1, unsigned int min_hits = 3);
+    void Init(const cv::Rect& bbox);
     void Predict(float dt);
     void Update(const cv::Rect& bbox);
-
+    Eigen::VectorXd GetState() {
+        return kf_.x_;
+    }
 
 private:
     Eigen::VectorXd ConvertBboxToObservation(const cv::Rect& bbox);

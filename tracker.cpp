@@ -72,8 +72,12 @@ void Tracker::Update(const cv::Rect& bbox) {
 }
 
 
+void Tracker::Init(const cv::Rect &bbox) {
+    kf_.x_.head(4) << ConvertBboxToObservation(bbox);
+}
+
 Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) {
-    Eigen::VectorXd observation;
+    Eigen::VectorXd observation = Eigen::VectorXd::Zero(4);
     auto width = static_cast<float>(bbox.width);
     auto height = static_cast<float>(bbox.height);
     float center_x = bbox.x + width / 2;
