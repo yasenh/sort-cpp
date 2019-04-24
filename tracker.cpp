@@ -60,6 +60,8 @@ void Tracker::Predict(float dt) {
 
     // TODO: update Q
     kf_.Predict();
+
+    age_ += 1;
 }
 
 
@@ -69,6 +71,8 @@ void Tracker::Update(const cv::Rect& bbox) {
     // observation - center_x, center_y, area, ratio
     Eigen::VectorXd observation = ConvertBboxToObservation(bbox);
     kf_.Update(observation);
+
+    age_ = 0;
 }
 
 
