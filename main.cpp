@@ -6,6 +6,8 @@
 #include <opencv2/highgui.hpp>
 
 #include "tracker.h"
+#include "munkres.h"
+#include "adapters/boostmatrixadapter.h"
 
 void ProcessLabel(std::ifstream& label_file,
         std::vector<std::vector<cv::Rect>>& bbox) {
@@ -62,6 +64,56 @@ float CalculateIou(const cv::Rect& det, Tracker& trk) {
 }
 
 
+void HungarianMatching(std::vector<std::vector<float>>& iou_matrix, unsigned int nrows, unsigned int ncols) {
+    Matrix<float> matrix(nrows, ncols);
+    // Initialize matrix with IOU values
+    for ( int i = 0 ; i < nrows ; i++ ) {
+        for ( int j = 0 ; j < ncols ; j++ ) {
+            // Multiply by -1 to find max cost
+            if (iou_matrix[i][j] != 0) {
+                matrix(i, j) = -iou_matrix[i][j];
+            }
+            else {
+                // TODO: figure out why we have to assign value to get correct result
+                matrix(i, j) = 1.0f;
+            }
+        }
+    }
+
+    // Display begin matrix state.
+    for ( int row = 0 ; row < nrows ; row++ ) {
+        for ( int col = 0 ; col < ncols ; col++ ) {
+            std::cout.width(10);
+            std::cout << matrix(row,col) << ",";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+
+    // Apply Munkres algorithm to matrix.
+    Munkres<float> m;
+    m.solve(matrix);
+
+    // Display solved matrix.
+    for ( int row = 0 ; row < nrows ; row++ ) {
+        for ( int col = 0 ; col < ncols ; col++ ) {
+            std::cout.width(2);
+            std::cout << matrix(row,col) << ",";
+        }
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl;
+
+    // Trick: copy assignment result back to IOU matrix
+    for ( int i = 0 ; i < nrows ; i++ ) {
+        for ( int j = 0 ; j < ncols ; j++ ) {
+            iou_matrix[i][j] = matrix(i, j);
+        }
+    }
+
+}
+
 void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
         std::map<unsigned int, Tracker>& tracks,
         std::map<unsigned int, cv::Rect>& matched,
@@ -79,6 +131,7 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
     // resize IOU matrix based on number of detection and tracks
     iou_matrix.resize(detection.size(), std::vector<float>(tracks.size()));
 
+    // row - detection, column - tracks
     for (size_t i = 0; i < detection.size(); i++) {
         size_t j = 0;
         for (auto& trk : tracks) {
@@ -86,6 +139,8 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
             j++;
         }
     }
+
+    HungarianMatching(iou_matrix, detection.size(), tracks.size());
 
     // TODO: association ID and the figure out unmatched
     for (const auto& det : detection) {
