@@ -64,11 +64,14 @@ float CalculateIou(const cv::Rect& det, Tracker& trk) {
 }
 
 
-void HungarianMatching(std::vector<std::vector<float>>& iou_matrix, unsigned int nrows, unsigned int ncols) {
+void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
+        size_t nrows, size_t ncols,
+        std::vector<std::vector<float>>& association) {
+    // https://github.com/yasenh/sort-cpp/blob/master/main.cpp
     Matrix<float> matrix(nrows, ncols);
     // Initialize matrix with IOU values
-    for ( int i = 0 ; i < nrows ; i++ ) {
-        for ( int j = 0 ; j < ncols ; j++ ) {
+    for (size_t i = 0 ; i < nrows ; i++) {
+        for (size_t j = 0 ; j < ncols ; j++) {
             // Multiply by -1 to find max cost
             if (iou_matrix[i][j] != 0) {
                 matrix(i, j) = -iou_matrix[i][j];
@@ -81,8 +84,8 @@ void HungarianMatching(std::vector<std::vector<float>>& iou_matrix, unsigned int
     }
 
     // Display begin matrix state.
-    for ( int row = 0 ; row < nrows ; row++ ) {
-        for ( int col = 0 ; col < ncols ; col++ ) {
+    for (size_t row = 0 ; row < nrows ; row++) {
+        for (size_t col = 0 ; col < ncols ; col++) {
             std::cout.width(10);
             std::cout << matrix(row,col) << ",";
         }
@@ -90,13 +93,14 @@ void HungarianMatching(std::vector<std::vector<float>>& iou_matrix, unsigned int
     }
     std::cout << std::endl;
 
-    // Apply Munkres algorithm to matrix.
+
+    // Apply Kuhn-Munkres algorithm to matrix.
     Munkres<float> m;
     m.solve(matrix);
 
     // Display solved matrix.
-    for ( int row = 0 ; row < nrows ; row++ ) {
-        for ( int col = 0 ; col < ncols ; col++ ) {
+    for (size_t row = 0 ; row < nrows ; row++) {
+        for (size_t col = 0 ; col < ncols ; col++) {
             std::cout.width(2);
             std::cout << matrix(row,col) << ",";
         }
@@ -105,20 +109,20 @@ void HungarianMatching(std::vector<std::vector<float>>& iou_matrix, unsigned int
 
     std::cout << std::endl;
 
+
     // Trick: copy assignment result back to IOU matrix
-    for ( int i = 0 ; i < nrows ; i++ ) {
-        for ( int j = 0 ; j < ncols ; j++ ) {
-            iou_matrix[i][j] = matrix(i, j);
+    for (size_t i = 0 ; i < nrows ; i++) {
+        for (size_t j = 0 ; j < ncols ; j++) {
+            association[i][j] = matrix(i, j);
         }
     }
-
 }
 
 void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
         std::map<unsigned int, Tracker>& tracks,
         std::map<unsigned int, cv::Rect>& matched,
         std::vector<cv::Rect>& unmatched_det,
-        float threshold = 0.3) {
+        float iou_threshold = 0.3) {
 
     if (tracks.empty()) {
         for (const auto& det : detection) {
@@ -131,6 +135,12 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
     // resize IOU matrix based on number of detection and tracks
     iou_matrix.resize(detection.size(), std::vector<float>(tracks.size()));
 
+    std::vector<std::vector<float>> association;
+    // resize association matrix based on number of detection and tracks
+    association.resize(detection.size(), std::vector<float>(tracks.size()));
+
+
+
     // row - detection, column - tracks
     for (size_t i = 0; i < detection.size(); i++) {
         size_t j = 0;
@@ -140,13 +150,28 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
         }
     }
 
-    HungarianMatching(iou_matrix, detection.size(), tracks.size());
+    HungarianMatching(iou_matrix, detection.size(), tracks.size(), association);
 
-    // TODO: association ID and the figure out unmatched
-    for (const auto& det : detection) {
-        unmatched_det.push_back(det);
+    for (size_t i = 0; i < detection.size(); i++) {
+        bool matched_flag = false;
+        size_t j = 0;
+        for (auto& trk : tracks) {
+            if (0 == association[i][j]) {
+                if (iou_matrix[i][j] < iou_threshold) {
+                    //filter out matched with low IOU
+                    break;
+                }
+                matched[trk.first] = detection[i];
+                matched_flag = true;
+                break;
+            }
+            j++;
+        }
+
+        if (!matched_flag) {
+            unmatched_det.push_back(detection[i]);
+        }
     }
-
 }
 
 
@@ -168,7 +193,8 @@ int main() {
     // Non-recursive
     cv::glob(path, images);
 
-    cv::namedWindow("Display window", cv::WINDOW_AUTOSIZE); // Create a window for display.
+    cv::namedWindow("Original", cv::WINDOW_AUTOSIZE); // Create a window for display.
+    cv::namedWindow("Tracking", cv::WINDOW_AUTOSIZE); // Create a window for display.
 
     unsigned int current_frame_index = 0;
     unsigned int current_ID = 0;
@@ -177,6 +203,8 @@ int main() {
 
     for(const auto & image : images) {
         cv::Mat img = imread(image); // Read the file
+        cv::Mat img_tracking = img.clone();
+
         // Check for invalid input
         if (img.empty()) {
             std::cerr << "Could not open or find the image!!!" << std::endl;
@@ -191,22 +219,33 @@ int main() {
             track.second.Predict(dt);
         }
 
+        for (auto it = tracks.begin(); it != tracks.end();) {
+            if (it->second.age_ > it->second.max_age_) {
+                it = tracks.erase(it);
+            }
+            else {
+                it++;
+            }
+        }
+
         /*** Build association ***/
         for (const auto& box : bbox[current_frame_index]) {
             // draw current bounding box in red
             cv::rectangle(img, box, cv::Scalar(0,0,255), 3);
         }
 
-        // matched, unmatched_dets, unmatched_trks
+
 
         std::map<unsigned int, cv::Rect> matched;
         std::vector<cv::Rect> unmatched_det;
 
+        // return values - matched, unmatched_det
         AssociateDetectionsToTrackers(bbox[current_frame_index], tracks, matched, unmatched_det);
 
         /*** Update tracks with associated bbox ***/
-        for (auto& track : tracks) {
-            //track.second.Update();
+        for (const auto& match : matched) {
+            const auto& ID = match.first;
+            tracks[ID].Update(match.second);
         }
 
         for (auto& det : unmatched_det) {
@@ -215,10 +254,26 @@ int main() {
             tracks[current_ID++] = tracker;
         }
 
-        // Show our image inside it
-        cv::imshow("Display window", img);
+        for (auto& trk : tracks) {
+            auto state = trk.second.GetState();
+            //convert_x_to_bbox
+            // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
+            auto width = std::sqrt(state[2] * state[3]);
+            auto height = state[2] / width;
+            auto tl_x = static_cast<int>(state[0] - width / 2);
+            auto tl_y = static_cast<int>(state[1] - height / 2);
+            auto br_x = static_cast<int>(state[0] + width / 2);
+            auto br_y = static_cast<int>(state[1] + height / 2);
 
-        auto key = cv::waitKey(33);
+            cv::putText(img_tracking, std::to_string(trk.first), cv::Point(tl_x, tl_y - 10), cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
+            cv::rectangle(img_tracking, cv::Point(tl_x, tl_y), cv::Point(br_x, br_y),cv::Scalar(0,255,0), 3);
+        }
+
+        // Show our image inside it
+        cv::imshow("Original", img);
+        cv::imshow("Tracking", img_tracking);
+
+        auto key = cv::waitKey(100);
         // Exit if ESC pressed
         if (27 == key) {
             break;
