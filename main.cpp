@@ -40,10 +40,7 @@ std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
 }
 
 
-float CalculateIou(const cv::Rect& det, Tracker& trk) {
-    auto state = trk.GetState();
-
-    //convert_x_to_bbox
+cv::Rect ConvertStateToRect(const Eigen::VectorXd& state) {
     // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
     auto width = std::sqrt(state[2] * state[3]);
     auto height = state[2] / width;
@@ -51,16 +48,23 @@ float CalculateIou(const cv::Rect& det, Tracker& trk) {
     auto tl_y = static_cast<int>(state[1] - height / 2);
     auto br_x = static_cast<int>(state[0] + width / 2);
     auto br_y = static_cast<int>(state[1] + height / 2);
+    cv::Rect rect(cv::Point(tl_x, tl_y), cv::Point(br_x, br_y));
+    return rect;
+}
 
-    auto xx1 = std::max(det.tl().x, tl_x);
-    auto yy1 = std::max(det.tl().y, tl_y);
-    auto xx2 = std::min(det.br().x, br_x);
-    auto yy2 = std::min(det.br().y, br_y);
+
+float CalculateIou(const cv::Rect& det, const Tracker& track) {
+    auto trk = ConvertStateToRect(track.GetState());
+    // calculate area of intersection and union
+    auto xx1 = std::max(det.tl().x, trk.tl().x);
+    auto yy1 = std::max(det.tl().y, trk.tl().y);
+    auto xx2 = std::min(det.br().x, trk.br().x);
+    auto yy2 = std::min(det.br().y, trk.br().y);
     auto w = std::max(0, xx2 - xx1);
     auto h = std::max(0, yy2 - yy1);
     auto intersection_area = w * h;
     float det_area = det.area();
-    float trk_area = (br_x - tl_x) * (br_y - tl_y);
+    float trk_area = trk.area();
     float union_area = det_area + trk_area - intersection_area;
     auto iou = intersection_area / union_area;
     return iou;
@@ -143,25 +147,25 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
     association.resize(detection.size(), std::vector<float>(tracks.size()));
 
 
-
     // row - detection, column - tracks
     for (size_t i = 0; i < detection.size(); i++) {
         size_t j = 0;
-        for (auto& trk : tracks) {
+        for (const auto& trk : tracks) {
             iou_matrix[i][j] = CalculateIou(detection[i], trk.second);
             j++;
         }
     }
 
+    // Find association
     HungarianMatching(iou_matrix, detection.size(), tracks.size(), association);
 
     for (size_t i = 0; i < detection.size(); i++) {
         bool matched_flag = false;
         size_t j = 0;
-        for (auto& trk : tracks) {
+        for (const auto& trk : tracks) {
             if (0 == association[i][j]) {
+                //filter out matched with low IOU
                 if (iou_matrix[i][j] < iou_threshold) {
-                    //filter out matched with low IOU
                     break;
                 }
                 matched[trk.first] = detection[i];
@@ -170,7 +174,7 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
             }
             j++;
         }
-
+        // if detection cannot match with any tracks
         if (!matched_flag) {
             unmatched_det.push_back(detection[i]);
         }
