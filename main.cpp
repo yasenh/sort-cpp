@@ -9,13 +9,15 @@
 #include "munkres.h"
 #include "adapters/boostmatrixadapter.h"
 
-void ProcessLabel(std::ifstream& label_file,
-        std::vector<std::vector<cv::Rect>>& bbox) {
+
+std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
+    std::vector<std::vector<cv::Rect>> bbox;
     // Process labels - group bounding boxes by frame index
-    std::string line;
-    unsigned int current_frame_index = 1;
+
+    int current_frame_index = 1;
 
     std::vector<cv::Rect> bbox_per_frame;
+    std::string line;
     while (std::getline(label_file, line)) {
         std::stringstream ss(line);
         // Label format <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
@@ -26,14 +28,15 @@ void ProcessLabel(std::ifstream& label_file,
         }
 
         if (label[0] != current_frame_index) {
-            current_frame_index = static_cast<unsigned int>(label[0]);
+            current_frame_index = static_cast<int>(label[0]);
             bbox.push_back(bbox_per_frame);
             bbox_per_frame.clear();
         }
         bbox_per_frame.emplace_back(label[2], label[3], label[4], label[5]);
     }
-    // Last frame
+    // Add bounding boxes from last frame
     bbox.push_back(bbox_per_frame);
+    return bbox;
 }
 
 
@@ -67,7 +70,6 @@ float CalculateIou(const cv::Rect& det, Tracker& trk) {
 void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
         size_t nrows, size_t ncols,
         std::vector<std::vector<float>>& association) {
-    // https://github.com/yasenh/sort-cpp/blob/master/main.cpp
     Matrix<float> matrix(nrows, ncols);
     // Initialize matrix with IOU values
     for (size_t i = 0 ; i < nrows ; i++) {
@@ -118,9 +120,10 @@ void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
     }
 }
 
+
 void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
-        std::map<unsigned int, Tracker>& tracks,
-        std::map<unsigned int, cv::Rect>& matched,
+        std::map<int, Tracker>& tracks,
+        std::map<int, cv::Rect>& matched,
         std::vector<cv::Rect>& unmatched_det,
         float iou_threshold = 0.3) {
 
@@ -176,15 +179,14 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
 
 
 int main() {
-    // Label
+    // Label file
     std::ifstream label_file("../data/ADL-Rundle-6/det.txt");
     if (!label_file.is_open()) {
         std::cerr << "Could not open or find the label!!!" << std::endl;
         return -1;
     }
 
-    std::vector<std::vector<cv::Rect>> bbox;
-    ProcessLabel(label_file, bbox);
+    std::vector<std::vector<cv::Rect>> all_detections = ProcessLabel(label_file);
     label_file.close();
 
     // Load images
@@ -193,16 +195,21 @@ int main() {
     // Non-recursive
     cv::glob(path, images);
 
-    cv::namedWindow("Original", cv::WINDOW_AUTOSIZE); // Create a window for display.
-    cv::namedWindow("Tracking", cv::WINDOW_AUTOSIZE); // Create a window for display.
+    // Create a window to display original image
+    cv::namedWindow("Original", cv::WINDOW_AUTOSIZE);
+    // Create a window to display tracking result
+    cv::namedWindow("Tracking", cv::WINDOW_AUTOSIZE);
 
-    unsigned int current_frame_index = 0;
-    unsigned int current_ID = 0;
+    int current_frame_index = 0;
+    // Assigned ID for each bounding box
+    int current_ID = 0;
     // Hash-map between ID and corresponding tracker
-    std::map<unsigned int, Tracker> tracks;
+    std::map<int, Tracker> tracks;
 
     for(const auto & image : images) {
-        cv::Mat img = imread(image); // Read the file
+        // Read image file
+        cv::Mat img = imread(image);
+        // Make a copy for display
         cv::Mat img_tracking = img.clone();
 
         // Check for invalid input
@@ -211,14 +218,14 @@ int main() {
             return -1;
         }
 
-
-        // Predict internal tracks from previous frame to current one
+        /*** Predict internal tracks from previous frame ***/
         // TODO: user can define dt
         const float dt = 0.1f;
         for (auto& track : tracks) {
             track.second.Predict(dt);
         }
 
+        // Delete dead tracks
         for (auto it = tracks.begin(); it != tracks.end();) {
             if (it->second.age_ > it->second.max_age_) {
                 it = tracks.erase(it);
@@ -229,18 +236,19 @@ int main() {
         }
 
         /*** Build association ***/
-        for (const auto& box : bbox[current_frame_index]) {
-            // draw current bounding box in red
-            cv::rectangle(img, box, cv::Scalar(0,0,255), 3);
+        const auto& detections = all_detections[current_frame_index];
+        for (const auto& det : detections) {
+            // Draw detected bounding boxes in red
+            cv::rectangle(img, det, cv::Scalar(0,0,255), 3);
         }
 
-
-
-        std::map<unsigned int, cv::Rect> matched;
+        // Hash-map between track ID and associated detection bounding box
+        std::map<int, cv::Rect> matched;
+        // vector of unassociated detections
         std::vector<cv::Rect> unmatched_det;
 
         // return values - matched, unmatched_det
-        AssociateDetectionsToTrackers(bbox[current_frame_index], tracks, matched, unmatched_det);
+        AssociateDetectionsToTrackers(detections, tracks, matched, unmatched_det);
 
         /*** Update tracks with associated bbox ***/
         for (const auto& match : matched) {
@@ -248,12 +256,15 @@ int main() {
             tracks[ID].Update(match.second);
         }
 
-        for (auto& det : unmatched_det) {
+        /*** Create new tracks for unmatched detections ***/
+        for (const auto& det : unmatched_det) {
             Tracker tracker;
             tracker.Init(det);
+            // Create new track and generate new ID
             tracks[current_ID++] = tracker;
         }
 
+        // Visualize tracking result
         for (auto& trk : tracks) {
             auto state = trk.second.GetState();
             //convert_x_to_bbox
@@ -273,7 +284,8 @@ int main() {
         cv::imshow("Original", img);
         cv::imshow("Tracking", img_tracking);
 
-        auto key = cv::waitKey(100);
+        // Delay in ms
+        auto key = cv::waitKey(static_cast<int>(dt * 1000));
         // Exit if ESC pressed
         if (27 == key) {
             break;
