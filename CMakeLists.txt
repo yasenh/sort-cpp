@@ -17,6 +17,13 @@ else ()
     message(FATAL_ERROR "Could not locate OpenCV")
 endif()
 
+find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+else ()
+    message(FATAL_ERROR "Could not locate Boost")
+endif()
+
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/src/adapters)
 
