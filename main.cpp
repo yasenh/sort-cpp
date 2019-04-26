@@ -7,8 +7,6 @@
 
 #include "tracker.h"
 #include "munkres.h"
-#include "adapters/boostmatrixadapter.h"
-
 
 std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
     // Process labels - group bounding boxes by frame index
@@ -278,6 +276,6 @@ int main() {
         // Accumulate frame index
         current_frame_index++;
     }
-    
+
     return 0;
 }

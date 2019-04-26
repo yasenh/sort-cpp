@@ -86,7 +86,7 @@ cv::Rect Tracker::GetStateBbox() const {
 }
 
 
-Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) {
+Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) const{
     Eigen::VectorXd observation = Eigen::VectorXd::Zero(4);
     auto width = static_cast<float>(bbox.width);
     auto height = static_cast<float>(bbox.height);

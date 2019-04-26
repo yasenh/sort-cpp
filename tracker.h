@@ -22,7 +22,7 @@ public:
 
 
 private:
-    Eigen::VectorXd ConvertBboxToObservation(const cv::Rect& bbox);
+    Eigen::VectorXd ConvertBboxToObservation(const cv::Rect& bbox) const;
     cv::Rect ConvertStateToBbox(const Eigen::VectorXd &state) const;
 
     KalmanFilter kf_;
