@@ -80,6 +80,12 @@ void Tracker::Init(const cv::Rect &bbox) {
     kf_.x_.head(4) << ConvertBboxToObservation(bbox);
 }
 
+
+cv::Rect Tracker::GetStateBbox() const {
+    return ConvertStateToBbox(kf_.x_);
+}
+
+
 Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) {
     Eigen::VectorXd observation = Eigen::VectorXd::Zero(4);
     auto width = static_cast<float>(bbox.width);
@@ -90,4 +96,17 @@ Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) {
     float ratio = width / height;
     observation << center_x, center_y, area, ratio;
     return observation;
+}
+
+
+cv::Rect Tracker::ConvertStateToBbox(const Eigen::VectorXd &state) const {
+    // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
+    auto width = std::sqrt(state[2] * state[3]);
+    auto height = state[2] / width;
+    auto tl_x = static_cast<int>(state[0] - width / 2);
+    auto tl_y = static_cast<int>(state[1] - height / 2);
+    auto br_x = static_cast<int>(state[0] + width / 2);
+    auto br_y = static_cast<int>(state[1] + height / 2);
+    cv::Rect rect(cv::Point(tl_x, tl_y), cv::Point(br_x, br_y));
+    return rect;
 }

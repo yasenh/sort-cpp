@@ -11,13 +11,13 @@
 
 
 std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
-    std::vector<std::vector<cv::Rect>> bbox;
     // Process labels - group bounding boxes by frame index
-
-    int current_frame_index = 1;
-
+    std::vector<std::vector<cv::Rect>> bbox;
     std::vector<cv::Rect> bbox_per_frame;
+    // Label index starts from 1
+    int current_frame_index = 1;
     std::string line;
+
     while (std::getline(label_file, line)) {
         std::stringstream ss(line);
         // Label format <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>
@@ -40,21 +40,8 @@ std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
 }
 
 
-cv::Rect ConvertStateToRect(const Eigen::VectorXd& state) {
-    // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
-    auto width = std::sqrt(state[2] * state[3]);
-    auto height = state[2] / width;
-    auto tl_x = static_cast<int>(state[0] - width / 2);
-    auto tl_y = static_cast<int>(state[1] - height / 2);
-    auto br_x = static_cast<int>(state[0] + width / 2);
-    auto br_y = static_cast<int>(state[1] + height / 2);
-    cv::Rect rect(cv::Point(tl_x, tl_y), cv::Point(br_x, br_y));
-    return rect;
-}
-
-
 float CalculateIou(const cv::Rect& det, const Tracker& track) {
-    auto trk = ConvertStateToRect(track.GetState());
+    auto trk = track.GetStateBbox();
     // calculate area of intersection and union
     auto xx1 = std::max(det.tl().x, trk.tl().x);
     auto yy1 = std::max(det.tl().y, trk.tl().y);
@@ -115,8 +102,6 @@ void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
 
     std::cout << std::endl;
 
-
-    // Trick: copy assignment result back to IOU matrix
     for (size_t i = 0 ; i < nrows ; i++) {
         for (size_t j = 0 ; j < ncols ; j++) {
             association[i][j] = matrix(i, j);
@@ -270,18 +255,9 @@ int main() {
 
         // Visualize tracking result
         for (auto& trk : tracks) {
-            auto state = trk.second.GetState();
-            //convert_x_to_bbox
-            // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
-            auto width = std::sqrt(state[2] * state[3]);
-            auto height = state[2] / width;
-            auto tl_x = static_cast<int>(state[0] - width / 2);
-            auto tl_y = static_cast<int>(state[1] - height / 2);
-            auto br_x = static_cast<int>(state[0] + width / 2);
-            auto br_y = static_cast<int>(state[1] + height / 2);
-
-            cv::putText(img_tracking, std::to_string(trk.first), cv::Point(tl_x, tl_y - 10), cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
-            cv::rectangle(img_tracking, cv::Point(tl_x, tl_y), cv::Point(br_x, br_y),cv::Scalar(0,255,0), 3);
+            const auto bbox = trk.second.GetStateBbox();
+            cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10), cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
+            cv::rectangle(img_tracking, bbox,cv::Scalar(0,255,0), 3);
         }
 
         // Show our image inside it
@@ -302,7 +278,6 @@ int main() {
         // Accumulate frame index
         current_frame_index++;
     }
-
-
+    
     return 0;
 }

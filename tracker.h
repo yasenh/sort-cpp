@@ -12,9 +12,7 @@ public:
     void Init(const cv::Rect& bbox);
     void Predict(float dt);
     void Update(const cv::Rect& bbox);
-    Eigen::VectorXd GetState() {
-        return kf_.x_;
-    }
+    cv::Rect GetStateBbox() const;
 
     unsigned int max_age_;
     unsigned int min_hits_;
@@ -25,8 +23,7 @@ public:
 
 private:
     Eigen::VectorXd ConvertBboxToObservation(const cv::Rect& bbox);
-
-
+    cv::Rect ConvertStateToBbox(const Eigen::VectorXd &state) const;
 
     KalmanFilter kf_;
 };
