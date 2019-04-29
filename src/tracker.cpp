@@ -1,10 +1,6 @@
-//
-// Created by yasen on 4/22/19.
-//
-
 #include "tracker.h"
 
-Tracker::Tracker(unsigned int max_age, unsigned int min_hits) : max_age_(max_age), min_hits_(min_hits), kf_(7,4) {
+Tracker::Tracker() : kf_(7,4) {
     frame_count_ = 0;
 
     /*** Define constant velocity model ***/
@@ -52,7 +48,8 @@ Tracker::Tracker(unsigned int max_age, unsigned int min_hits) : max_age_(max_age
 }
 
 
-// time elapsed between the current and previous measurements
+// Get predicted locations from existing trackers
+// dt is time elapsed between the current and previous measurements
 void Tracker::Predict(float dt) {
     kf_.F_(0, 4) = dt;
     kf_.F_(1, 5) = dt;
@@ -61,27 +58,39 @@ void Tracker::Predict(float dt) {
     // TODO: update Q
     kf_.Predict();
 
-    age_ += 1;
+    // hit streak count will be reset
+    if (coast_cycles_ > 0) {
+        hit_streak_ = 0;
+    }
+    // accumulate coast cycle count
+    coast_cycles_ += 1;
 }
 
 
+// Update matched trackers with assigned detections
 void Tracker::Update(const cv::Rect& bbox) {
     frame_count_ += 1;
+
+    // get measurement update, reset coast cycle count
+    coast_cycles_ = 0;
+    // accumulate hit streak count
+    hit_streak_ += 1;
 
     // observation - center_x, center_y, area, ratio
     Eigen::VectorXd observation = ConvertBboxToObservation(bbox);
     kf_.Update(observation);
 
-    age_ = 0;
+
 }
 
 
+// Create and initialize new trackers for unmatched detections
 void Tracker::Init(const cv::Rect &bbox) {
     kf_.x_.head(4) << ConvertBboxToObservation(bbox);
 }
 
 
-cv::Rect Tracker::GetStateBbox() const {
+cv::Rect Tracker::GetStateAsBbox() const {
     return ConvertStateToBbox(kf_.x_);
 }
 

@@ -7,6 +7,7 @@
 
 #include "tracker.h"
 #include "munkres.h"
+#include "utils.h"
 
 std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
     // Process labels - group bounding boxes by frame index
@@ -39,7 +40,7 @@ std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
 
 
 float CalculateIou(const cv::Rect& det, const Tracker& track) {
-    auto trk = track.GetStateBbox();
+    auto trk = track.GetStateAsBbox();
     // calculate area of intersection and union
     auto xx1 = std::max(det.tl().x, trk.tl().x);
     auto yy1 = std::max(det.tl().y, trk.tl().y);
@@ -212,16 +213,6 @@ int main() {
             track.second.Predict(dt);
         }
 
-        // Delete dead tracks
-        for (auto it = tracks.begin(); it != tracks.end();) {
-            if (it->second.age_ > it->second.max_age_) {
-                it = tracks.erase(it);
-            }
-            else {
-                it++;
-            }
-        }
-
         /*** Build association ***/
         const auto& detections = all_detections[current_frame_index];
         for (const auto& det : detections) {
@@ -251,11 +242,25 @@ int main() {
             tracks[current_ID++] = tracker;
         }
 
+        /*** Delete lose tracked tracks ***/
+        for (auto it = tracks.begin(); it != tracks.end();) {
+            if (it->second.coast_cycles_ > kMaxCoastCycles) {
+                it = tracks.erase(it);
+            }
+            else {
+                it++;
+            }
+        }
+
+
         // Visualize tracking result
         for (auto& trk : tracks) {
-            const auto bbox = trk.second.GetStateBbox();
-            cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10), cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
-            cv::rectangle(img_tracking, bbox,cv::Scalar(0,255,0), 3);
+            if (trk.second.frame_count_ < kMinHits || trk.second.hit_streak_ > kMinHits) {
+                const auto bbox = trk.second.GetStateAsBbox();
+                cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10),
+                            cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
+                cv::rectangle(img_tracking, bbox, cv::Scalar(0, 255, 0), 3);
+            }
         }
 
         // Show our image inside it
