@@ -7,9 +7,9 @@ xhost +
 
 docker run \
     -it --rm \
-    --env="XAUTHORITY=${XAUTH}" \
-    --env="DISPLAY=${DISPLAY}" \
-    --env="QT_X11_NO_MITSHM=1" \
+    -e XAUTHORITY=${XAUTH} \
+    -e DISPLAY=${DISPLAY} \
+    -e QT_X11_NO_MITSHM=1 \
     --privileged \
     -v /dev/bus/usb:/dev/bus/usb \
     -v /dev/video0:/dev/video0 \
