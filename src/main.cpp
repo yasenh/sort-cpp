@@ -207,7 +207,6 @@ int main() {
         }
 
         /*** Predict internal tracks from previous frame ***/
-        // TODO: user can define dt
         const float dt = 0.1f;
         for (auto& track : tracks) {
             track.second.Predict(dt);
@@ -257,6 +256,7 @@ int main() {
         for (auto& trk : tracks) {
             if (trk.second.frame_count_ < kMinHits || trk.second.hit_streak_ > kMinHits) {
                 const auto bbox = trk.second.GetStateAsBbox();
+                // TODO: color = ID % const_number
                 cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10),
                             cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
                 cv::rectangle(img_tracking, bbox, cv::Scalar(0, 255, 0), 3);
@@ -275,7 +275,15 @@ int main() {
         }
         else if (32 == key) {
             // Press Space to pause and press it again to resume
-            while(32 != cv::waitKey(0));
+            while(true) {
+                key = cv::waitKey(0);
+                if (32 == key) {
+                    break;
+                }
+                else if (27 == key) {
+                    return 0;
+                }
+            }
         }
 
         // Accumulate frame index
