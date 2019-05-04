@@ -166,6 +166,8 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
     }
 }
 
+// TODO: add arguments to enable or disable display
+// TODO: add output format to MOT
 
 int main() {
     // Label file
