@@ -6,9 +6,11 @@ https://github.com/saebyn/munkres-cpp
 
 ## Dependencies
 - Ubuntu 16.04
+- Docker 18.09.4
 - OpenCV 3.4.2
 - Boost 1.58.0
 
+> All of the 3rd party libraries are included in the provided docker image
 
 ## Build Docker Image
 1. Open Dockerfile, change line #19 ARG USERNAME to your host user name (echo $USER)
@@ -36,3 +38,9 @@ To run the tracker with the provided detections and visualize the results:
     $ cd /path/to/sort-cpp/bin
     $ ./sort-cpp
     ```
+
+## Results
+Using the [Python implementation of metrics for benchmarking multiple object trackers (MOT)](https://github.com/cheind/py-motmetrics) to evaluate metrics. 
+
+
+FPS is around 1900 with Debug build.
