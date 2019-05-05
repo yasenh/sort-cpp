@@ -2,6 +2,7 @@
 #include <fstream>
 #include <map>
 #include <random>
+#include <chrono>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -172,7 +173,7 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
 
 // TODO: choose dataset
 // TODO: add output format to MOT
-// TODO: calculate FPS
+
 int main(int argc, const char *argv[]) {
     // parse program input arguments
     boost::program_options::options_description desc{"Options"};
@@ -236,7 +237,10 @@ int main(int argc, const char *argv[]) {
     // Hash-map between ID and corresponding tracker
     std::map<int, Tracker> tracks;
 
-    for(size_t i = 0; i < all_detections.size(); i++) {
+    size_t total_frames = all_detections.size();
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    for(size_t i = 0; i < total_frames; i++) {
         /*** Predict internal tracks from previous frame ***/
         const float dt = 0.1f;
         for (auto& track : tracks) {
@@ -328,6 +332,13 @@ int main(int argc, const char *argv[]) {
             }
         } // end of enable_display_flag
     } // end of iterating all frames
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
+    std::cout << "********************************" << std::endl;
+    std::cout << "Total tracking took: " << time_span.count() << " for " << total_frames << " frames" << std::endl;
+    std::cout << "FPS = " << total_frames / time_span.count()  << std::endl;
+    std::cout << "********************************" << std::endl;
 
     return 0;
 }
