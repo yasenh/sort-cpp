@@ -19,7 +19,7 @@ else ()
 endif()
 
 # Try to find Boost
-find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
 else ()
