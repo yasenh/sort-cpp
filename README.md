@@ -42,6 +42,7 @@ To run the tracker with the provided detections and visualize the results:
 ## Results
 Using the [Python implementation of metrics for benchmarking multiple object trackers (MOT)](https://github.com/cheind/py-motmetrics) to evaluate metrics. 
 
+// TODO: add gifs to visualize
 
 FPS is around 1900 with Debug build.
 
