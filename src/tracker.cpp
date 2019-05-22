@@ -1,6 +1,6 @@
 #include "tracker.h"
 
-Tracker::Tracker() : kf_(7,4) {
+Tracker::Tracker() : kf_(7, 4) {
     frame_count_ = 0;
 
     /*** Define constant velocity model ***/
@@ -82,17 +82,29 @@ void Tracker::Update(const cv::Rect& bbox) {
 }
 
 
-// Create and initialize new trackers for unmatched detections
+// Create and initialize new trackers for unmatched detections, with initial bounding box
 void Tracker::Init(const cv::Rect &bbox) {
     kf_.x_.head(4) << ConvertBboxToObservation(bbox);
 }
 
 
+/**
+ * Returns the current bounding box estimate
+ * @return
+ */
 cv::Rect Tracker::GetStateAsBbox() const {
     return ConvertStateToBbox(kf_.x_);
 }
 
 
+/**
+ * Takes a bounding box in the form [x, y, width, height] and returns z in the form
+ * [x, y, s, r] where x,y is the centre of the box and s is the scale/area and r is
+ * the aspect ratio
+ *
+ * @param bbox
+ * @return
+ */
 Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) const{
     Eigen::VectorXd observation = Eigen::VectorXd::Zero(4);
     auto width = static_cast<float>(bbox.width);
@@ -106,6 +118,13 @@ Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) const{
 }
 
 
+/**
+ * Takes a bounding box in the centre form [x,y,s,r] and returns it in the form
+ * [x1,y1,x2,y2] where x1,y1 is the top left and x2,y2 is the bottom right
+ *
+ * @param state
+ * @return
+ */
 cv::Rect Tracker::ConvertStateToBbox(const Eigen::VectorXd &state) const {
     // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
     auto width = std::sqrt(state[2] * state[3]);

@@ -50,16 +50,18 @@ std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
 
 float CalculateIou(const cv::Rect& det, const Tracker& track) {
     auto trk = track.GetStateAsBbox();
-    // calculate area of intersection and union
+    // get min/max points
     auto xx1 = std::max(det.tl().x, trk.tl().x);
     auto yy1 = std::max(det.tl().y, trk.tl().y);
     auto xx2 = std::min(det.br().x, trk.br().x);
     auto yy2 = std::min(det.br().y, trk.br().y);
     auto w = std::max(0, xx2 - xx1);
     auto h = std::max(0, yy2 - yy1);
-    auto intersection_area = w * h;
+
+    // calculate area of intersection and union
     float det_area = det.area();
     float trk_area = trk.area();
+    auto intersection_area = w * h;
     float union_area = det_area + trk_area - intersection_area;
     auto iou = intersection_area / union_area;
     return iou;
@@ -118,12 +120,22 @@ void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
 }
 
 
+/**
+ * Assigns detections to tracked object (both represented as bounding boxes)
+ * Returns 2 lists of matches, unmatched_detections
+ * @param detection
+ * @param tracks
+ * @param matched
+ * @param unmatched_det
+ * @param iou_threshold
+ */
 void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
         std::map<int, Tracker>& tracks,
         std::map<int, cv::Rect>& matched,
         std::vector<cv::Rect>& unmatched_det,
         float iou_threshold = 0.3) {
 
+    // Set all detection as unmatched if no tracks existing
     if (tracks.empty()) {
         for (const auto& det : detection) {
             unmatched_det.push_back(det);
@@ -157,12 +169,12 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
         size_t j = 0;
         for (const auto& trk : tracks) {
             if (0 == association[i][j]) {
-                //filter out matched with low IOU
-                if (iou_matrix[i][j] < iou_threshold) {
-                    break;
+                // Filter out matched with low IOU
+                if (iou_matrix[i][j] >= iou_threshold) {
+                    matched[trk.first] = detection[i];
+                    matched_flag = true;
                 }
-                matched[trk.first] = detection[i];
-                matched_flag = true;
+                // It builds 1 to 1 association, so we can break from here
                 break;
             }
             j++;
@@ -177,6 +189,8 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
 
 // TODO: choose dataset
 // TODO: add output format to MOT, create output folder 'output'
+// TODO: unit test
+// TODO: log history of each track
 
 int main(int argc, const char *argv[]) {
     // parse program input arguments
