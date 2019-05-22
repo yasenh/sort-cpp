@@ -1,3 +1,7 @@
+/**
+ * SORT: A Simple, Online and Realtime Tracker
+ */
+
 #include <iostream>
 #include <fstream>
 #include <map>
@@ -172,14 +176,14 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
 
 
 // TODO: choose dataset
-// TODO: add output format to MOT
+// TODO: add output format to MOT, create output folder 'output'
 
 int main(int argc, const char *argv[]) {
     // parse program input arguments
     boost::program_options::options_description desc{"Options"};
     desc.add_options()
             ("help,h", "Help screen")
-            ("display,d", "Enable display");
+            ("display,d", "Display online tracker output (slow) [False]");
 
     boost::program_options::variables_map vm;
     boost::program_options::store(parse_command_line(argc, argv, desc), vm);
@@ -196,6 +200,7 @@ int main(int argc, const char *argv[]) {
     }
 
     // Open label file
+    // TODO: process different sequences
     std::ifstream label_file("../data/ADL-Rundle-6/det.txt");
     if (!label_file.is_open()) {
         std::cerr << "Could not open or find the label!!!" << std::endl;
@@ -338,6 +343,9 @@ int main(int argc, const char *argv[]) {
     std::cout << "********************************" << std::endl;
     std::cout << "Total tracking took: " << time_span.count() << " for " << total_frames << " frames" << std::endl;
     std::cout << "FPS = " << total_frames / time_span.count()  << std::endl;
+    if (enable_display_flag) {
+        std::cout << "Note: to get real runtime results run without the option: --display" << std::endl;
+    }
     std::cout << "********************************" << std::endl;
 
     return 0;
