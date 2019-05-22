@@ -86,29 +86,29 @@ void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
         }
     }
 
-    // Display begin matrix state.
-    for (size_t row = 0 ; row < nrows ; row++) {
-        for (size_t col = 0 ; col < ncols ; col++) {
-            std::cout.width(10);
-            std::cout << matrix(row,col) << ",";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
+//    // Display begin matrix state.
+//    for (size_t row = 0 ; row < nrows ; row++) {
+//        for (size_t col = 0 ; col < ncols ; col++) {
+//            std::cout.width(10);
+//            std::cout << matrix(row,col) << ",";
+//        }
+//        std::cout << std::endl;
+//    }
+//    std::cout << std::endl;
 
 
     // Apply Kuhn-Munkres algorithm to matrix.
     Munkres<float> m;
     m.solve(matrix);
 
-    // Display solved matrix.
-    for (size_t row = 0 ; row < nrows ; row++) {
-        for (size_t col = 0 ; col < ncols ; col++) {
-            std::cout.width(2);
-            std::cout << matrix(row,col) << ",";
-        }
-        std::cout << std::endl;
-    }
+//    // Display solved matrix. 
+//    for (size_t row = 0 ; row < nrows ; row++) {
+//        for (size_t col = 0 ; col < ncols ; col++) {
+//            std::cout.width(2);
+//            std::cout << matrix(row,col) << ",";
+//        }
+//        std::cout << std::endl;
+//    }
 
     std::cout << std::endl;
 
@@ -321,11 +321,15 @@ int main(int argc, const char *argv[]) {
 
             // Visualize tracking result
             for (auto &trk : tracks) {
+                // TODO: TBD which track to visualize and log to output
                 if (trk.second.frame_count_ < kMinHits || trk.second.hit_streak_ > kMinHits) {
                     const auto bbox = trk.second.GetStateAsBbox();
                     cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10),
                                 cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
                     cv::rectangle(img_tracking, bbox, colors[trk.first % num_of_colors], 3);
+
+                    std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                    << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1" << std::endl;
                 }
             }
 
@@ -353,6 +357,8 @@ int main(int argc, const char *argv[]) {
     } // end of iterating all frames
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+
+    // TODO: output - <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>   (1, -1, -1, -1 for last 4 items)
 
     std::cout << "********************************" << std::endl;
     std::cout << "Total tracking took: " << time_span.count() << " for " << total_frames << " frames" << std::endl;

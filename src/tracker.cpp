@@ -53,6 +53,11 @@ void Tracker::Predict(float dt) {
     kf_.F_(1, 5) = dt;
     kf_.F_(2, 6) = dt;
 
+    /*** TODO: Trick in python implementation, why??? Otherwise area will be negative?? works for ratio ???***/
+    if (kf_.x_[6] + kf_.x_[2] <= 0) {
+        kf_.x_[6] = 0;
+    }
+
     // TODO: update Q based on deltaT
     kf_.Predict();
 
@@ -125,6 +130,7 @@ Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) const{
  * @param state
  * @return
  */
+ // TODO: add score as additional output
 cv::Rect Tracker::ConvertStateToBbox(const Eigen::VectorXd &state) const {
     // state - center_x, center_y, area, ratio, v_cx, v_cy, v_area
     auto width = std::sqrt(state[2] * state[3]);
