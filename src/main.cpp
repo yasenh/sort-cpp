@@ -101,7 +101,7 @@ void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
     Munkres<float> m;
     m.solve(matrix);
 
-//    // Display solved matrix. 
+//    // Display solved matrix.
 //    for (size_t row = 0 ; row < nrows ; row++) {
 //        for (size_t col = 0 ; col < ncols ; col++) {
 //            std::cout.width(2);
@@ -109,8 +109,7 @@ void HungarianMatching(const std::vector<std::vector<float>>& iou_matrix,
 //        }
 //        std::cout << std::endl;
 //    }
-
-    std::cout << std::endl;
+//    std::cout << std::endl;
 
     for (size_t i = 0 ; i < nrows ; i++) {
         for (size_t j = 0 ; j < ncols ; j++) {
@@ -251,6 +250,17 @@ int main(int argc, const char *argv[]) {
         }
     }
 
+    std::string output_path = "../output/ADL-Rundle-6.txt";
+    std::ofstream output_file(output_path);
+    // TODO: check if output folder exist
+    if (output_file.is_open()) {
+        std::cout << "Result will be exported to " << output_path << std::endl;
+    }
+    else {
+        std::cerr << "Unable to open output file" << std::endl;
+        return -1;
+    }
+
     // Assigned ID for each bounding box
     int current_ID = 0;
     // Hash-map between ID and corresponding tracker
@@ -330,6 +340,8 @@ int main(int argc, const char *argv[]) {
 
                     std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
                     << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1" << std::endl;
+                    output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                    << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n";
                 }
             }
 
@@ -367,6 +379,8 @@ int main(int argc, const char *argv[]) {
         std::cout << "Note: to get real runtime results run without the option: --display" << std::endl;
     }
     std::cout << "********************************" << std::endl;
+
+    output_file.close();
 
     return 0;
 }
