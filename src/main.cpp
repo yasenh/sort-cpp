@@ -214,7 +214,12 @@ int main(int argc, const char *argv[]) {
 
     // Open label file
     // TODO: process different sequences
-    std::ifstream label_file("../data/ADL-Rundle-6/det.txt");
+
+
+    // ADL-Rundle-6, TUD-Campus
+    std::string dataset_name = "ADL-Rundle-6";
+    std::string label_path = "../data/" + dataset_name + "/det.txt";
+    std::ifstream label_file(label_path);
     if (!label_file.is_open()) {
         std::cerr << "Could not open or find the label!!!" << std::endl;
         return -1;
@@ -228,7 +233,7 @@ int main(int argc, const char *argv[]) {
     constexpr int num_of_colors = 32;
     if (enable_display_flag) {
         // Load images
-        cv::String path("../mot_benchmark/train/ADL-Rundle-6/img1/*.jpg");
+        cv::String path("../mot_benchmark/train/" + dataset_name + "/img1/*.jpg");
         // Non-recursive
         cv::glob(path, images);
 
@@ -250,7 +255,7 @@ int main(int argc, const char *argv[]) {
         }
     }
 
-    std::string output_path = "../output/ADL-Rundle-6.txt";
+    std::string output_path = "../output/" + dataset_name + ".txt";
     std::ofstream output_file(output_path);
     // TODO: check if output folder exist
     if (output_file.is_open()) {
@@ -338,8 +343,11 @@ int main(int argc, const char *argv[]) {
                                 cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
                     cv::rectangle(img_tracking, bbox, colors[trk.first % num_of_colors], 3);
 
+                    // Print to terminal for debugging
                     std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
                     << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1" << std::endl;
+
+                    // Export to text file for metrics evaluation
                     output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
                     << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n";
                 }
@@ -369,8 +377,6 @@ int main(int argc, const char *argv[]) {
     } // end of iterating all frames
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
-
-    // TODO: output - <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>   (1, -1, -1, -1 for last 4 items)
 
     std::cout << "********************************" << std::endl;
     std::cout << "Total tracking took: " << time_span.count() << " for " << total_frames << " frames" << std::endl;
