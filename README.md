@@ -23,6 +23,10 @@ https://github.com/saebyn/munkres-cpp
 
 ## Demo:
 
+![Screenshot-1](docs/1.png)
+
+
+
 To run the tracker with the provided detections and visualize the results:
 
 1. Download the [2D MOT 2015 benchmark dataset](https://motchallenge.net/data/2D_MOT_2015/#download)
@@ -94,17 +98,16 @@ $ python -m motmetrics.apps.eval_motchallenge groundtruths tests
 
 
 
-
-
-// TODO: add gifs to visualize
-
 FPS is around 1900 with Debug build.
 
 
 
 ## TODO
 
-[ ] Add py-motmetrics in docker
+- [ ] Add py-motmetrics into docker
+- [ ] Fine-tuning KF
+- [ ] Add gifs
+- [ ] List metrics evaluation result
 
  
 
