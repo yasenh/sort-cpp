@@ -27,11 +27,11 @@ To run the tracker with the provided detections and visualize the results:
 
 1. Download the [2D MOT 2015 benchmark dataset](https://motchallenge.net/data/2D_MOT_2015/#download)
 2. Create a symbolic link to the dataset
-    ```
+    ```bash
     $ ln -s /path/to/MOT2015_challenge/data/2DMOT2015 /path/to/sort-cpp/mot_benchmark
     ```
 3. Run the demo
-    ```
+    ```bash
     $ cd /path/to/sort-cpp
     $ mkdir build && cd "$_"
     $ cmake .. && make
@@ -39,12 +39,74 @@ To run the tracker with the provided detections and visualize the results:
     $ ./sort-cpp
     ```
 
-## Results
+
+
+## Evaluate Metrics
+
 Using the [Python implementation of metrics for benchmarking multiple object trackers (MOT)](https://github.com/cheind/py-motmetrics) to evaluate metrics. 
+
+
+
+#### Dataset Structure
+
+```
+Layout for ground truth data
+	<GT_ROOT>/<SEQUENCE_1>/gt/gt.txt
+    <GT_ROOT>/<SEQUENCE_2>/gt/gt.txt
+    ...
+
+Layout for test data
+    <TEST_ROOT>/<SEQUENCE_1>.txt
+    <TEST_ROOT>/<SEQUENCE_2>.txt
+    ...
+
+Example:
+mot_benchmark
+├── test
+│   ├── ADL-Rundle-6.txt
+│   └── ADL-Rundle-8.txt
+└── train
+    ├── ADL-Rundle-6
+    │   └── gt
+    │       └── gt.txt
+    └── ADL-Rundle-8
+        └── gt
+            └── gt.txt
+
+
+Sequences of ground truth and test will be matched according to the `<SEQUENCE_X>`
+string.
+```
+
+
+
+#### Example
+
+```bash
+# Optional for virtualenv
+$ source ~/env/bin/activate
+$ pip install motmetrics
+# Usage
+$ python -m motmetrics.apps.eval_motchallenge --help
+# Example mot_benchmark/train mot_benchmark/test
+$ python -m motmetrics.apps.eval_motchallenge groundtruths tests
+```
+
+
+
+
 
 // TODO: add gifs to visualize
 
 FPS is around 1900 with Debug build.
+
+
+
+## TODO
+
+[ ] Add py-motmetrics in docker
+
+ 
 
 ## References
 1. https://github.com/abewley/sort
