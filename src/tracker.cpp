@@ -24,9 +24,9 @@ Tracker::Tracker() : kf_(7, 4) {
            0, 0, 0, 0, 0, 0, 10000;
 
     kf_.Q_ <<
-           1, 0, 0, 0, 1, 0, 0,
-           0, 1, 0, 0, 0, 1, 0,
-           0, 0, 1, 0, 0, 0, 1,
+           1, 0, 0, 0, 0, 0, 0,
+           0, 1, 0, 0, 0, 0, 0,
+           0, 0, 1, 0, 0, 0, 0,
            0, 0, 0, 1, 0, 0, 0,
            0, 0, 0, 0, 0.01, 0, 0,
            0, 0, 0, 0, 0, 0.01, 0,
@@ -99,6 +99,11 @@ void Tracker::Init(const cv::Rect &bbox) {
  */
 cv::Rect Tracker::GetStateAsBbox() const {
     return ConvertStateToBbox(kf_.x_);
+}
+
+
+double Tracker::GetNIS() const {
+    return kf_.NIS_;
 }
 
 
