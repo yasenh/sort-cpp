@@ -215,8 +215,8 @@ int main(int argc, const char *argv[]) {
     // TODO: process different sequences
 
 
-    // ADL-Rundle-6, TUD-Campus
-    std::string dataset_name = "PETS09-S2L1";
+    // ADL-Rundle-6, TUD-Campus, PETS09-S2L1
+    std::string dataset_name = "TUD-Campus";
     std::string label_path = "../data/" + dataset_name + "/det.txt";
     std::ifstream label_file(label_path);
     if (!label_file.is_open()) {
@@ -256,6 +256,10 @@ int main(int argc, const char *argv[]) {
 
     std::string output_path = "../output/" + dataset_name + ".txt";
     std::ofstream output_file(output_path);
+
+    std::string output_path_NIS = "../output/" + dataset_name + "-NIS.txt";
+    std::ofstream output_file_NIS(output_path_NIS);
+
     // TODO: check if output folder exist
     if (output_file.is_open()) {
         std::cout << "Result will be exported to " << output_path << std::endl;
@@ -275,7 +279,7 @@ int main(int argc, const char *argv[]) {
     auto t1 = std::chrono::high_resolution_clock::now();
     for(size_t i = 0; i < total_frames; i++) {
         /*** Predict internal tracks from previous frame ***/
-        const float dt = 0.1f;
+        constexpr float dt = 0.1f;
         for (auto& track : tracks) {
             track.second.Predict(dt);
         }
@@ -315,7 +319,20 @@ int main(int argc, const char *argv[]) {
             }
         }
 
+        for (auto &trk : tracks) {
+            const auto& bbox = trk.second.GetStateAsBbox();
+            // Print to terminal for debugging
+            std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                      << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1" << std::endl;
 
+            // Export to text file for metrics evaluation
+            output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                        << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n";
+
+            output_file_NIS << trk.second.GetNIS() << "\n";
+        }
+
+        // Visualize tracking result
         if(enable_display_flag) {
             // Read image file
             cv::Mat img = imread(images[i]);
@@ -333,22 +350,13 @@ int main(int argc, const char *argv[]) {
                 cv::rectangle(img, det, cv::Scalar(0, 0, 255), 3);
             }
 
-            // Visualize tracking result
             for (auto &trk : tracks) {
                 // TODO: TBD which track to visualize and log to output
                 if (trk.second.frame_count_ < kMinHits || trk.second.hit_streak_ > kMinHits) {
-                    const auto bbox = trk.second.GetStateAsBbox();
+                    const auto& bbox = trk.second.GetStateAsBbox();
                     cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10),
                                 cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
                     cv::rectangle(img_tracking, bbox, colors[trk.first % num_of_colors], 3);
-
-                    // Print to terminal for debugging
-                    std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
-                    << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1" << std::endl;
-
-                    // Export to text file for metrics evaluation
-                    output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
-                    << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n";
                 }
             }
 
