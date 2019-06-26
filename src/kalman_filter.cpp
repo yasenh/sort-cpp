@@ -28,6 +28,7 @@ KalmanFilter::KalmanFilter(unsigned int num_states, unsigned int num_obs) :
     R_ = Eigen::MatrixXd::Zero(num_obs, num_obs);
 
     log_likelihood_delta_ = 0.0;
+    NIS_ = 0.0;
 }
 
 
@@ -59,6 +60,8 @@ void KalmanFilter::Update(const Eigen::VectorXd& z) {
 
     // S - innovation covariance
     Eigen::MatrixXd S = H_ * P_predict_ * Ht + R_;
+
+    NIS_ = y.transpose() * S.inverse() * y;
 
     // K - Kalman gain
     Eigen::MatrixXd K = P_predict_ * Ht * S.inverse();

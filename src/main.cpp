@@ -187,7 +187,6 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
 
 
 // TODO: choose dataset
-// TODO: add output format to MOT, create output folder 'output'
 // TODO: unit test
 // TODO: log history of each track
 
@@ -217,7 +216,7 @@ int main(int argc, const char *argv[]) {
 
 
     // ADL-Rundle-6, TUD-Campus
-    std::string dataset_name = "ADL-Rundle-6";
+    std::string dataset_name = "PETS09-S2L1";
     std::string label_path = "../data/" + dataset_name + "/det.txt";
     std::ifstream label_file(label_path);
     if (!label_file.is_open()) {

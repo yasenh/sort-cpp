@@ -41,8 +41,6 @@ public:
      */
     virtual void Update(const Eigen::VectorXd &z);
 
-
-    // TODO: calculate NIS
     /**
      * Calculate marginal log-likelihood to evaluate different parameter choices
      */
@@ -69,4 +67,6 @@ public:
     unsigned int num_states_, num_obs_;
 
     double log_likelihood_delta_;
+
+    double NIS_;
 };
