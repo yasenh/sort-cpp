@@ -1,4 +1,6 @@
 #pragma once
+
+#include <iostream>
 #include <eigen3/Eigen/Dense>
 
 // abstract class for Kalman filter

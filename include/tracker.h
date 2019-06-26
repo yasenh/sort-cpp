@@ -11,6 +11,7 @@ public:
     void Predict(float dt);
     void Update(const cv::Rect& bbox);
     cv::Rect GetStateAsBbox() const;
+    double GetNIS() const;
 
     int coast_cycles_ = 0, hit_streak_ = 0, frame_count_ = 0;
 
