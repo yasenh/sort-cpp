@@ -215,8 +215,8 @@ int main(int argc, const char *argv[]) {
     // TODO: process different sequences
 
 
-    // ADL-Rundle-6, TUD-Campus, PETS09-S2L1
-    std::string dataset_name = "TUD-Campus";
+    // ADL-Rundle-6, TUD-Campus, PETS09-S2L1, ETH-Sunnyday
+    std::string dataset_name = "ETH-Sunnyday";
     std::string label_path = "../data/" + dataset_name + "/det.txt";
     std::ifstream label_file(label_path);
     if (!label_file.is_open()) {
@@ -327,6 +327,8 @@ int main(int argc, const char *argv[]) {
             const auto& bbox = trk.second.GetStateAsBbox();
 
             // TODO: think about if we need to export coasted tracks or if we need to increase kMaxCoastCycles???
+            // TODO: think about how to utlize hit_streak_, should be ++ and --, set up and down threshold??? (not reset everytime?)
+            // TODO: combine with visualization
             if (trk.second.coast_cycles_< 1 && (trk.second.hit_streak_ >= kMinHits || frame_index < kMinHits)) {
                 // Print to terminal for debugging
                 std::cout << frame_index << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
@@ -362,7 +364,7 @@ int main(int argc, const char *argv[]) {
             }
 
             for (auto &trk : tracks) {
-                if (trk.second.hit_streak_ >= kMinHits || trk.second.frame_count_ < kMinHits) {
+                if (trk.second.coast_cycles_< 1 && (trk.second.hit_streak_ >= kMinHits || frame_index < kMinHits)) {
                     const auto& bbox = trk.second.GetStateAsBbox();
                     cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10),
                                 cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
