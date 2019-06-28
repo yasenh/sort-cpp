@@ -278,6 +278,7 @@ int main(int argc, const char *argv[]) {
 
     auto t1 = std::chrono::high_resolution_clock::now();
     for(size_t i = 0; i < total_frames; i++) {
+        auto frame_index = i + 1;
         std::cout << "************* NEW FRAME ************* " << std::endl;
 
 
@@ -324,16 +325,18 @@ int main(int argc, const char *argv[]) {
 
         for (auto &trk : tracks) {
             const auto& bbox = trk.second.GetStateAsBbox();
-            if (trk.second.hit_streak_ >= kMinHits || trk.second.frame_count_ < kMinHits) {
+
+            // TODO: think about if we need to export coasted tracks or if we need to increase kMaxCoastCycles???
+            if (trk.second.coast_cycles_< 1 && (trk.second.hit_streak_ >= kMinHits || frame_index < kMinHits)) {
                 // Print to terminal for debugging
-                std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                std::cout << frame_index << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
                           << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1"
                           << " Frame Count = "<< trk.second.frame_count_
                           << " Hit Streak = "<< trk.second.hit_streak_
                           << " Coast Cycles = "<< trk.second.coast_cycles_ <<  std::endl;
 
                 // Export to text file for metrics evaluation
-                output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                output_file << frame_index << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
                             << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n" ;
 
                 output_file_NIS << trk.second.GetNIS() << "\n";
