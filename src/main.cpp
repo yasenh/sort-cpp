@@ -278,6 +278,9 @@ int main(int argc, const char *argv[]) {
 
     auto t1 = std::chrono::high_resolution_clock::now();
     for(size_t i = 0; i < total_frames; i++) {
+        std::cout << "************* NEW FRAME ************* " << std::endl;
+
+
         /*** Predict internal tracks from previous frame ***/
         constexpr float dt = 0.1f;
         for (auto& track : tracks) {
@@ -321,15 +324,20 @@ int main(int argc, const char *argv[]) {
 
         for (auto &trk : tracks) {
             const auto& bbox = trk.second.GetStateAsBbox();
-            // Print to terminal for debugging
-            std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
-                      << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1" << std::endl;
+            if (trk.second.hit_streak_ >= kMinHits || trk.second.frame_count_ < kMinHits) {
+                // Print to terminal for debugging
+                std::cout << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                          << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1"
+                          << " Frame Count = "<< trk.second.frame_count_
+                          << " Hit Streak = "<< trk.second.hit_streak_
+                          << " Coast Cycles = "<< trk.second.coast_cycles_ <<  std::endl;
 
-            // Export to text file for metrics evaluation
-            output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
-                        << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n";
+                // Export to text file for metrics evaluation
+                output_file << i + 1 << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
+                            << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1\n" ;
 
-            output_file_NIS << trk.second.GetNIS() << "\n";
+                output_file_NIS << trk.second.GetNIS() << "\n";
+            }
         }
 
         // Visualize tracking result
@@ -351,8 +359,7 @@ int main(int argc, const char *argv[]) {
             }
 
             for (auto &trk : tracks) {
-                // TODO: TBD which track to visualize and log to output
-                if (trk.second.frame_count_ < kMinHits || trk.second.hit_streak_ > kMinHits) {
+                if (trk.second.hit_streak_ >= kMinHits || trk.second.frame_count_ < kMinHits) {
                     const auto& bbox = trk.second.GetStateAsBbox();
                     cv::putText(img_tracking, std::to_string(trk.first), cv::Point(bbox.tl().x, bbox.tl().y - 10),
                                 cv::FONT_HERSHEY_DUPLEX, 2, cv::Scalar(255, 255, 255), 2);
@@ -365,7 +372,10 @@ int main(int argc, const char *argv[]) {
             cv::imshow("Tracking", img_tracking);
 
             // Delay in ms
-            auto key = cv::waitKey(static_cast<int>(dt * 1000));
+            //auto key = cv::waitKey(static_cast<int>(dt * 1000));
+            auto key = cv::waitKey(0);
+
+
             // Exit if ESC pressed
             if (27 == key) {
                 break;

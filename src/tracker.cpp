@@ -20,10 +20,10 @@ Tracker::Tracker() : kf_(8, 4) {
            0, 10, 0, 0, 0, 0, 0, 0,
            0, 0, 10, 0, 0, 0, 0, 0,
            0, 0, 0, 10, 0, 0, 0, 0,
-           0, 0, 0, 0, 10000, 0, 0, 0,
-           0, 0, 0, 0, 0, 10000, 0, 0,
-           0, 0, 0, 0, 0, 0, 10000, 0,
-           0, 0, 0, 0, 0, 0, 0, 10000;
+           0, 0, 0, 0, 1000, 0, 0, 0,
+           0, 0, 0, 0, 0, 1000, 0, 0,
+           0, 0, 0, 0, 0, 0, 1000, 0,
+           0, 0, 0, 0, 0, 0, 0, 1000;
 
     kf_.Q_ <<
            1, 0, 0, 0, 0, 0, 0, 0,
@@ -67,18 +67,18 @@ void Tracker::Predict(float dt) {
         hit_streak_ = 0;
     }
     // accumulate coast cycle count
-    coast_cycles_ += 1;
+    coast_cycles_++;
 }
 
 
 // Update matched trackers with assigned detections
 void Tracker::Update(const cv::Rect& bbox) {
-    frame_count_ += 1;
+    frame_count_++;
 
     // get measurement update, reset coast cycle count
     coast_cycles_ = 0;
     // accumulate hit streak count
-    hit_streak_ += 1;
+    hit_streak_++;
 
     // observation - center_x, center_y, area, ratio
     Eigen::VectorXd observation = ConvertBboxToObservation(bbox);
@@ -91,6 +91,8 @@ void Tracker::Update(const cv::Rect& bbox) {
 // Create and initialize new trackers for unmatched detections, with initial bounding box
 void Tracker::Init(const cv::Rect &bbox) {
     kf_.x_.head(4) << ConvertBboxToObservation(bbox);
+    frame_count_++;
+    hit_streak_++;
 }
 
 
