@@ -1,7 +1,6 @@
 #include "tracker.h"
 
 Tracker::Tracker() : kf_(8, 4) {
-    frame_count_ = 0;
 
     /*** Define constant velocity model ***/
     // state - center_x, center_y, width, height, v_cx, v_cy, v_width, v_height
@@ -73,7 +72,6 @@ void Tracker::Predict(float dt) {
 
 // Update matched trackers with assigned detections
 void Tracker::Update(const cv::Rect& bbox) {
-    frame_count_++;
 
     // get measurement update, reset coast cycle count
     coast_cycles_ = 0;
@@ -91,7 +89,6 @@ void Tracker::Update(const cv::Rect& bbox) {
 // Create and initialize new trackers for unmatched detections, with initial bounding box
 void Tracker::Init(const cv::Rect &bbox) {
     kf_.x_.head(4) << ConvertBboxToObservation(bbox);
-    frame_count_++;
     hit_streak_++;
 }
 

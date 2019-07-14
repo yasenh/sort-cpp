@@ -13,7 +13,7 @@ public:
     cv::Rect GetStateAsBbox() const;
     double GetNIS() const;
 
-    int coast_cycles_ = 0, hit_streak_ = 0, frame_count_ = 0;
+    int coast_cycles_ = 0, hit_streak_ = 0;
 
 private:
     Eigen::VectorXd ConvertBboxToObservation(const cv::Rect& bbox) const;
