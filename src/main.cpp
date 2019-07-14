@@ -187,7 +187,6 @@ void AssociateDetectionsToTrackers(const std::vector<cv::Rect>& detection,
 
 
 // TODO: choose dataset
-// TODO: unit test
 // TODO: log history of each track
 
 int main(int argc, const char *argv[]) {
@@ -216,7 +215,7 @@ int main(int argc, const char *argv[]) {
 
 
     // ADL-Rundle-6, TUD-Campus, PETS09-S2L1, ETH-Sunnyday
-    std::string dataset_name = "ETH-Sunnyday";
+    std::string dataset_name = "TUD-Campus";
     std::string label_path = "../data/" + dataset_name + "/det.txt";
     std::ifstream label_file(label_path);
     if (!label_file.is_open()) {
@@ -291,6 +290,14 @@ int main(int argc, const char *argv[]) {
         /*** Build association ***/
         const auto& detections = all_detections[i];
 
+        std::cout << "Raw detections:" << std::endl;
+        for (const auto& det : detections) {
+            std::cout << frame_index << "," << "-1"<< "," << det.tl().x << "," << det.tl().y
+                      << "," << det.width << "," << det.height << std::endl;
+        }
+        std::cout << std::endl;
+
+
         // Hash-map between track ID and associated detection bounding box
         std::map<int, cv::Rect> matched;
         // vector of unassociated detections
@@ -323,17 +330,18 @@ int main(int argc, const char *argv[]) {
             }
         }
 
+
         for (auto &trk : tracks) {
             const auto& bbox = trk.second.GetStateAsBbox();
-
-            // TODO: think about if we need to export coasted tracks or if we need to increase kMaxCoastCycles???
-            // TODO: think about how to utlize hit_streak_, should be ++ and --, set up and down threshold??? (not reset everytime?)
-            // TODO: combine with visualization
+            // Note that we will not export coasted tracks
+            // If we export coasted tracks, the total number of false negative will decrease (and maybe ID switch)
+            // However, the total number of false positive will increase more (from experiments),
+            // which leads to MOTA decrease
+            // Developer can export coasted cycles if false negative tracks is critical in the system
             if (trk.second.coast_cycles_< 1 && (trk.second.hit_streak_ >= kMinHits || frame_index < kMinHits)) {
                 // Print to terminal for debugging
                 std::cout << frame_index << "," << trk.first << "," << bbox.tl().x << "," << bbox.tl().y
                           << "," << bbox.width << "," << bbox.height << ",1,-1,-1,-1"
-                          << " Frame Count = "<< trk.second.frame_count_
                           << " Hit Streak = "<< trk.second.hit_streak_
                           << " Coast Cycles = "<< trk.second.coast_cycles_ <<  std::endl;
 
@@ -396,6 +404,8 @@ int main(int argc, const char *argv[]) {
                 }
             }
         } // end of enable_display_flag
+
+
     } // end of iterating all frames
     auto t2 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
