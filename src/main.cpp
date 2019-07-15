@@ -40,7 +40,11 @@ std::vector<std::vector<cv::Rect>> ProcessLabel(std::ifstream& label_file) {
             bbox.push_back(bbox_per_frame);
             bbox_per_frame.clear();
         }
-        bbox_per_frame.emplace_back(label[2], label[3], label[4], label[5]);
+
+        // Ignore low confidence detections
+        if (label[6] > kMinConfidence) {
+            bbox_per_frame.emplace_back(label[2], label[3], label[4], label[5]);
+        }
     }
     // Add bounding boxes from last frame
     bbox.push_back(bbox_per_frame);
