@@ -46,7 +46,7 @@ public:
     /**
      * Calculate marginal log-likelihood to evaluate different parameter choices
      */
-    double CalculateLogLikelihood(const Eigen::VectorXd& y, const Eigen::MatrixXd& S);
+    float CalculateLogLikelihood(const Eigen::VectorXd& y, const Eigen::MatrixXd& S);
 
     // State vector
     Eigen::VectorXd x_, x_predict_;
@@ -66,9 +66,11 @@ public:
     // covariance matrix of observation noise
     Eigen::MatrixXd R_;
 
+    float noise_ax, noise_ay, noise_aw, noise_ah;
+
     unsigned int num_states_, num_obs_;
 
-    double log_likelihood_delta_;
+    float log_likelihood_delta_;
 
-    double NIS_;
+    float NIS_;
 };

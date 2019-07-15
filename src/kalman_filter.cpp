@@ -28,6 +28,7 @@ KalmanFilter::KalmanFilter(unsigned int num_states, unsigned int num_obs) :
     R_ = Eigen::MatrixXd::Zero(num_obs, num_obs);
 
     log_likelihood_delta_ = 0.0;
+    noise_ax = noise_ay = noise_aw = noise_ah = 0.0;
     NIS_ = 0.0;
 }
 
@@ -63,24 +64,24 @@ void KalmanFilter::Update(const Eigen::VectorXd& z) {
 
     NIS_ = y.transpose() * S.inverse() * y;
 
-    std::cout << std::endl;
-    std::cout << "P_predict = " << std::endl;
-    std::cout << P_predict_ << std::endl;
-
-
-    std::cout << "Z = " << std::endl;
-    std::cout << z << std::endl;
-
-    std::cout << "Z_pred = " << std::endl;
-    std::cout << z_predict << std::endl;
-
-    std::cout << "y = " << std::endl;
-    std::cout << y << std::endl;
-
-    std::cout << "S = " << std::endl;
-    std::cout << S << std::endl;
-
-    std::cout << "NIS = " << NIS_ << std::endl;
+//    std::cout << std::endl;
+//    std::cout << "P_predict = " << std::endl;
+//    std::cout << P_predict_ << std::endl;
+//
+//
+//    std::cout << "Z = " << std::endl;
+//    std::cout << z << std::endl;
+//
+//    std::cout << "Z_pred = " << std::endl;
+//    std::cout << z_predict << std::endl;
+//
+//    std::cout << "y = " << std::endl;
+//    std::cout << y << std::endl;
+//
+//    std::cout << "S = " << std::endl;
+//    std::cout << S << std::endl;
+//
+//    std::cout << "NIS = " << NIS_ << std::endl;
 
 
     // K - Kalman gain
@@ -97,8 +98,8 @@ void KalmanFilter::Update(const Eigen::VectorXd& z) {
 }
 
 
-double KalmanFilter::CalculateLogLikelihood(const Eigen::VectorXd& y, const Eigen::MatrixXd& S) {
-    double log_likelihood;
+float KalmanFilter::CalculateLogLikelihood(const Eigen::VectorXd& y, const Eigen::MatrixXd& S) {
+    float log_likelihood;
 
     // Note: Computing log(M.determinant()) in Eigen C++ is risky for large matrices since it may overflow or underflow.
     // compute the Cholesky decomposition of the innovation covariance matrix, because it is symmetric
@@ -107,7 +108,7 @@ double KalmanFilter::CalculateLogLikelihood(const Eigen::VectorXd& y, const Eige
     auto& L = S.llt().matrixL();
 
     // find log determinant of innovation covariance matrix
-    double log_determinant = 0;
+    float log_determinant = 0;
     for (unsigned int i = 0; i < S.rows(); i++)
         log_determinant += log(L(i, i));
     log_determinant *= 2;

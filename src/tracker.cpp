@@ -24,15 +24,15 @@ Tracker::Tracker() : kf_(8, 4) {
            0, 0, 0, 0, 0, 0, 1000, 0,
            0, 0, 0, 0, 0, 0, 0, 1000;
 
-    kf_.Q_ <<
-           1, 0, 0, 0, 0, 0, 0, 0,
-           0, 1, 0, 0, 0, 0, 0, 0,
-           0, 0, 1, 0, 0, 0, 0, 0,
-           0, 0, 0, 1, 0, 0, 0, 0,
-           0, 0, 0, 0, 0.01, 0, 0, 0,
-           0, 0, 0, 0, 0, 0.01, 0, 0,
-           0, 0, 0, 0, 0, 0, 0.01, 0,
-           0, 0, 0, 0, 0, 0, 0, 0.01;
+//    kf_.Q_ <<
+//           1, 0, 0, 0, 0, 0, 0, 0,
+//           0, 1, 0, 0, 0, 0, 0, 0,
+//           0, 0, 1, 0, 0, 0, 0, 0,
+//           0, 0, 0, 1, 0, 0, 0, 0,
+//           0, 0, 0, 0, 0.01, 0, 0, 0,
+//           0, 0, 0, 0, 0, 0.01, 0, 0,
+//           0, 0, 0, 0, 0, 0, 0.01, 0,
+//           0, 0, 0, 0, 0, 0, 0, 0.01;
 
     kf_.H_ <<
            1, 0, 0, 0, 0, 0, 0, 0,
@@ -46,7 +46,8 @@ Tracker::Tracker() : kf_(8, 4) {
             0, 0, 10, 0,
             0, 0, 0,  10;
 
-
+    kf_.noise_ax = kf_.noise_ay = 1.0;
+    kf_.noise_aw = kf_.noise_ah = 0.01;
 }
 
 
@@ -58,7 +59,21 @@ void Tracker::Predict(float dt) {
     kf_.F_(2, 6) = dt;
     kf_.F_(3, 7) = dt;
 
-    // TODO: update Q based on deltaT
+
+    float dt_2 = dt * dt;
+    float dt_3 = dt_2 * dt;
+    float dt_4 = dt_3 * dt;
+
+    kf_.Q_ <<
+    dt_4/4*kf_.noise_ax, 0, 0, 0, dt_3/2*kf_.noise_ax, 0, 0, 0,
+    0, dt_4/4*kf_.noise_ay, 0, 0, 0, dt_3/2*kf_.noise_ay, 0, 0,
+    0, 0, dt_4/4*kf_.noise_aw, 0, 0, 0, dt_3/2*kf_.noise_aw, 0,
+    0, 0, 0, dt_4/4*kf_.noise_ah, 0, 0, 0, dt_3/2*kf_.noise_ah,
+    dt_3/2*kf_.noise_ax, 0, 0, 0, dt_2*kf_.noise_ax, 0, 0, 0,
+    0, dt_3/2*kf_.noise_ay, 0, 0, 0, dt_2*kf_.noise_ay, 0, 0,
+    0, 0, dt_3/2*kf_.noise_aw, 0, 0, 0, dt_2*kf_.noise_aw, 0,
+    0, 0, 0, dt_3/2*kf_.noise_ah, 0, 0, 0, dt_2*kf_.noise_ah;
+
     kf_.Predict();
 
     // hit streak count will be reset
@@ -102,7 +117,7 @@ cv::Rect Tracker::GetStateAsBbox() const {
 }
 
 
-double Tracker::GetNIS() const {
+float Tracker::GetNIS() const {
     return kf_.NIS_;
 }
 
@@ -133,7 +148,6 @@ Eigen::VectorXd Tracker::ConvertBboxToObservation(const cv::Rect& bbox) const{
  * @param state
  * @return
  */
- // TODO: add score as additional output
 cv::Rect Tracker::ConvertStateToBbox(const Eigen::VectorXd &state) const {
     // state - center_x, center_y, width, height, v_cx, v_cy, v_width, v_height
     auto width = static_cast<int>(state[2]);
