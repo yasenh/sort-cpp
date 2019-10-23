@@ -289,9 +289,8 @@ int main(int argc, const char *argv[]) {
 
 
             /*** Predict internal tracks from previous frame ***/
-            constexpr float dt = 0.1f;
             for (auto &track : tracks) {
-                track.second.Predict(dt);
+                track.second.Predict();
             }
 
             /*** Build association ***/

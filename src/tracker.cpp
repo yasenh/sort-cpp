@@ -14,15 +14,27 @@ Tracker::Tracker() : kf_(8, 4) {
            0, 0, 0, 0, 0, 0, 1, 0,
            0, 0, 0, 0, 0, 0, 0, 1;
 
+//    kf_.P_ <<
+//           10, 0, 0, 0, 0, 0, 0, 0,
+//           0, 10, 0, 0, 0, 0, 0, 0,
+//           0, 0, 10, 0, 0, 0, 0, 0,
+//           0, 0, 0, 10, 0, 0, 0, 0,
+//           0, 0, 0, 0, 1000, 0, 0, 0,
+//           0, 0, 0, 0, 0, 1000, 0, 0,
+//           0, 0, 0, 0, 0, 0, 1000, 0,
+//           0, 0, 0, 0, 0, 0, 0, 1000;
+
+    // Give high uncertainty to the unobservable initial velocities
     kf_.P_ <<
            10, 0, 0, 0, 0, 0, 0, 0,
-           0, 10, 0, 0, 0, 0, 0, 0,
-           0, 0, 10, 0, 0, 0, 0, 0,
-           0, 0, 0, 10, 0, 0, 0, 0,
-           0, 0, 0, 0, 1000, 0, 0, 0,
-           0, 0, 0, 0, 0, 1000, 0, 0,
-           0, 0, 0, 0, 0, 0, 1000, 0,
-           0, 0, 0, 0, 0, 0, 0, 1000;
+            0, 10, 0, 0, 0, 0, 0, 0,
+            0, 0, 10, 0, 0, 0, 0, 0,
+            0, 0, 0, 10, 0, 0, 0, 0,
+            0, 0, 0, 0, 10000, 0, 0, 0,
+            0, 0, 0, 0, 0, 10000, 0, 0,
+            0, 0, 0, 0, 0, 0, 10000, 0,
+            0, 0, 0, 0, 0, 0, 0, 10000;
+
 
     kf_.H_ <<
            1, 0, 0, 0, 0, 0, 0, 0,
@@ -30,41 +42,34 @@ Tracker::Tracker() : kf_(8, 4) {
            0, 0, 1, 0, 0, 0, 0, 0,
            0, 0, 0, 1, 0, 0, 0, 0;
 
-    kf_.R_ <<
-            50, 0, 0,  0,
-            0, 50, 0,  0,
-            0, 0, 50, 0,
-            0, 0, 0,  50;
+//    kf_.R_ <<
+//            50, 0, 0,  0,
+//            0, 50, 0,  0,
+//            0, 0, 50, 0,
+//            0, 0, 0,  50;
 
-    // Variance
-    kf_.noise_ax = kf_.noise_ay = 100.0;
-    kf_.noise_aw = kf_.noise_ah = 100.0;
+    // TODO: compare this model with acceleration model
+    kf_.Q_ <<
+            1, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0, 0, 0, 0,
+            0, 0, 0, 0, 0.01, 0, 0, 0,
+            0, 0, 0, 0, 0, 0.01, 0, 0,
+            0, 0, 0, 0, 0, 0, 0.0001, 0,
+            0, 0, 0, 0, 0, 0, 0, 0.0001;
+
+    kf_.R_ <<
+            1, 0, 0,  0,
+            0, 1, 0,  0,
+            0, 0, 10, 0,
+            0, 0, 0,  10;
 }
 
 
 // Get predicted locations from existing trackers
 // dt is time elapsed between the current and previous measurements
-void Tracker::Predict(float dt) {
-    kf_.F_(0, 4) = dt;
-    kf_.F_(1, 5) = dt;
-    kf_.F_(2, 6) = dt;
-    kf_.F_(3, 7) = dt;
-
-
-    float dt_2 = dt * dt;
-    float dt_3 = dt_2 * dt;
-    float dt_4 = dt_3 * dt;
-
-    kf_.Q_ <<
-    dt_4/4*kf_.noise_ax, 0, 0, 0, dt_3/2*kf_.noise_ax, 0, 0, 0,
-    0, dt_4/4*kf_.noise_ay, 0, 0, 0, dt_3/2*kf_.noise_ay, 0, 0,
-    0, 0, dt_4/4*kf_.noise_aw, 0, 0, 0, dt_3/2*kf_.noise_aw, 0,
-    0, 0, 0, dt_4/4*kf_.noise_ah, 0, 0, 0, dt_3/2*kf_.noise_ah,
-    dt_3/2*kf_.noise_ax, 0, 0, 0, dt_2*kf_.noise_ax, 0, 0, 0,
-    0, dt_3/2*kf_.noise_ay, 0, 0, 0, dt_2*kf_.noise_ay, 0, 0,
-    0, 0, dt_3/2*kf_.noise_aw, 0, 0, 0, dt_2*kf_.noise_aw, 0,
-    0, 0, 0, dt_3/2*kf_.noise_ah, 0, 0, 0, dt_2*kf_.noise_ah;
-
+void Tracker::Predict() {
     kf_.Predict();
 
     // hit streak count will be reset

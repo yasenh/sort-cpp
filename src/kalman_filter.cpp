@@ -28,7 +28,6 @@ KalmanFilter::KalmanFilter(unsigned int num_states, unsigned int num_obs) :
     R_ = Eigen::MatrixXd::Zero(num_obs, num_obs);
 
     log_likelihood_delta_ = 0.0;
-    noise_ax = noise_ay = noise_aw = noise_ah = 0.0;
     NIS_ = 0.0;
 }
 

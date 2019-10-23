@@ -8,7 +8,7 @@ public:
     Tracker();
 
     void Init(const cv::Rect& bbox);
-    void Predict(float dt);
+    void Predict();
     void Update(const cv::Rect& bbox);
     cv::Rect GetStateAsBbox() const;
     float GetNIS() const;

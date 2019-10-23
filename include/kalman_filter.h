@@ -66,8 +66,6 @@ public:
     // covariance matrix of observation noise
     Eigen::MatrixXd R_;
 
-    float noise_ax, noise_ay, noise_aw, noise_ah;
-
     unsigned int num_states_, num_obs_;
 
     float log_likelihood_delta_;
