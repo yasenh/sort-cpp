@@ -56,7 +56,7 @@ Using the [Python implementation of metrics for benchmarking multiple object tra
 ```
 Layout for ground truth data
 	<GT_ROOT>/<SEQUENCE_1>/gt/gt.txt
-    <GT_ROOT>/<SEQUENCE_2>/gt/gt.txt
+	<GT_ROOT>/<SEQUENCE_2>/gt/gt.txt
     ...
 
 Layout for test data
