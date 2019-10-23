@@ -1,5 +1,5 @@
 ## Introduction
-C++ implementation of SORT: Simple, online, and realtime tracking of multiple objects in a video sequence.
+C++ implementation of SORT: Simple, online, and real-time tracking of multiple objects in a video sequence.
 
 Kuhn-Munkres (Hungarian) Algorithm in C++ is forked from:
 https://github.com/saebyn/munkres-cpp
@@ -40,7 +40,10 @@ To run the tracker with the provided detections and visualize the results:
     $ mkdir build && cd "$_"
     $ cmake .. && make
     $ cd /path/to/sort-cpp/bin
+    # Without display
     $ ./sort-cpp
+    # With display
+    $ ./sort-cpp -d
     ```
 
 
@@ -102,18 +105,9 @@ $ python -m motmetrics.apps.eval_motchallenge mot_benchmark/train output/
 
 ![Screenshot-1](docs/2.png)
 
-
-
 FPS is around 1900 with Debug build.
 
 
-
-## TODO
-
-- [ ] Fine-tuning KF
-- [ ] Add gifs
-
- 
 
 ## References
 1. https://github.com/abewley/sort
