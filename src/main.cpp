@@ -305,7 +305,9 @@ int main(int argc, const char *argv[]) {
             std::vector<cv::Rect> unmatched_det;
 
             // return values - matched, unmatched_det
-            AssociateDetectionsToTrackers(detections, tracks, matched, unmatched_det);
+            if (!detections.empty()) {
+                AssociateDetectionsToTrackers(detections, tracks, matched, unmatched_det);
+            }
 
             /*** Update tracks with associated bbox ***/
             for (const auto &match : matched) {
