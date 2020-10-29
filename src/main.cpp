@@ -358,7 +358,7 @@ int main(int argc, const char *argv[]) {
             // Visualize tracking result
             if (enable_display_flag) {
                 // Read image file
-                cv::Mat img = imread(images[i]);
+                cv::Mat img = cv::imread(images[i]);
                 // Make a copy for display
                 cv::Mat img_tracking = img.clone();
 
