@@ -130,8 +130,8 @@ Eigen::VectorXd Track::ConvertBboxToObservation(const cv::Rect& bbox) const{
  */
 cv::Rect Track::ConvertStateToBbox(const Eigen::VectorXd &state) const {
     // state - center_x, center_y, width, height, v_cx, v_cy, v_width, v_height
-    auto width = static_cast<int>(state[2]);
-    auto height = static_cast<int>(state[3]);
+    auto width = std::max(0, static_cast<int>(state[2]));
+    auto height = std::max(0, static_cast<int>(state[3]));
     auto tl_x = static_cast<int>(state[0] - width / 2.0);
     auto tl_y = static_cast<int>(state[1] - height / 2.0);
     cv::Rect rect(cv::Point(tl_x, tl_y), cv::Size(width, height));
